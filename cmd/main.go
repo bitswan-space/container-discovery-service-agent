@@ -56,7 +56,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				containerIDs, err := docker.ListContainers()
+				containerIDs, err := docker.GetTopology()
 				if err != nil {
 					logger.Error.Printf("Failed to list containers: %v", err)
 					continue
