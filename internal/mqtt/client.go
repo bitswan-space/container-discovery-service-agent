@@ -48,6 +48,19 @@ func Init() error {
 	return nil
 }
 
+func Publish(topic string, payload string) {
+	if client == nil || !client.IsConnected() {
+		logger.Error.Println("MQTT client is not connected")
+		return
+	}
+
+	token := client.Publish(topic, 0, true, payload)
+	token.Wait()
+	if token.Error() != nil {
+		logger.Error.Printf("Failed to publish message: %v", token.Error())
+	}
+}
+
 // Properly close the MQTT connection
 func Close() {
 	if client != nil && client.IsConnected() {

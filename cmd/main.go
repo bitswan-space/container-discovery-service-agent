@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -56,12 +55,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				containerIDs, err := docker.GetTopology()
-				if err != nil {
-					logger.Error.Printf("Failed to list containers: %v", err)
-					continue
-				}
-				fmt.Println(containerIDs)
+				docker.SendTopology()
 
 			case <-sigChan:
 				// Received an exit signal

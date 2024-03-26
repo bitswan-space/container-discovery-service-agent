@@ -2,10 +2,13 @@ package docker
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"strings"
 	"time"
 
+	"bitswan.space/container-discovery-service-agent/internal/config"
+	"bitswan.space/container-discovery-service-agent/internal/logger"
+	"bitswan.space/container-discovery-service-agent/internal/mqtt"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 )
@@ -35,6 +38,7 @@ type Topology struct {
 
 
 var cli *client.Client // Docker client
+var cfg *config.Configuration
 
 // Init initializes the Docker client
 func Init() error {
@@ -43,6 +47,8 @@ func Init() error {
 	if err != nil {
 		return err
 	}
+
+	cfg = config.GetConfig()
 
 	return nil
 }
@@ -54,16 +60,16 @@ func Close() {
 	}
 }
 
-func GetTopology() (*Topology, error) {
+func SendTopology(){
 	var topology Topology = Topology{DisplayStyle: "list"}
 	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
-		return nil, err
+		logger.Error.Printf("Failed to list containers: %v", err)
 	}
 
 	info, err := cli.Info(context.Background())
 	if err != nil {
-		fmt.Println(err)
+		logger.Error.Printf("Failed to get Docker info: %v", err)
 	}
 
 	var topologyItems = make(map[string]TopologyItem)
@@ -71,26 +77,36 @@ func GetTopology() (*Topology, error) {
 		// filter pumps
 		if _, exists := container.Labels["space.bitswan.pipeline.protocol-version"]; exists {
 			deploymentId := GetDeploymentId(container.ID)
+			if deploymentId == "" {
+				continue
+			}
 			TopologyProperties := TopologyProperties{
 				ContainerID:  container.ID,
 				EndpointName: info.Name,
 				CreatedAt:	time.Unix(container.Created, 0),
-				Name:         container.Names[0],
+				Name:         strings.Replace(container.Names[0], "/", "", -1),
 				State:        container.State,
 				Status:       container.Status,
 				DeploymentId: deploymentId,
-		}
+			}
 
-		topologyItems[deploymentId] = TopologyItem{
-			Wires:      []string{},
-			Properties: TopologyProperties,
-			Metrics:    []int{},
-		}
+			topologyItems[deploymentId] = TopologyItem{
+				Wires:      []string{},
+				Properties: TopologyProperties,
+				Metrics:    []int{},
+			}
 		}
 	}
 
 	topology.Topology = topologyItems
-	return &topology, nil
+
+	b, err := json.MarshalIndent(topology, "", "  ")
+	if err != nil {
+		logger.Error.Println(err)
+		return
+	}
+
+	mqtt.Publish(cfg.TopologyTopic, string(b))
 
 }
 

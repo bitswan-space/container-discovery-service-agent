@@ -10,6 +10,7 @@ import (
 type Configuration struct {
 	MQTTBrokerUrl        string `yaml:"mqtt-broker-url"`
 	PollingInterval      int    `yaml:"polling-interval"`
+	TopologyTopic        string `yaml:"topology-topic"`
 }
 
 var cfg *Configuration
