@@ -2,12 +2,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"bitswan.space/container-discovery-service-agent/internal/config"
+	"bitswan.space/container-discovery-service-agent/internal/docker"
 	"bitswan.space/container-discovery-service-agent/internal/logger"
+	"bitswan.space/container-discovery-service-agent/internal/mqtt"
 	"github.com/joho/godotenv"
 )
 
@@ -24,14 +28,54 @@ func main() {
 		logger.Error.Fatalf("Failed to load configuration: %v", err)
 		os.Exit(1)
 	}
+	cfg := config.GetConfig()
+
+	err = mqtt.Init()
+	if err != nil {
+		logger.Error.Fatalf("Failed to initialize MQTT client: %v", err)
+		os.Exit(1)
+	}
+
+	err = docker.Init()
+	if err != nil {
+		logger.Error.Fatalf("Failed to initialize MQTT client: %v", err)
+		os.Exit(1)
+	}
+
+
+	ticker := time.NewTicker(time.Duration(cfg.PollingInterval) * time.Second)
+	defer ticker.Stop()
+
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Block until a signal is received
-	<-sigChan
-	logger.Info.Println("Shutting down gracefully...")
-	// Perform any necessary cleanup here
+	done := make(chan bool)
 
-	logger.Info.Println("Shutdown complete")
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				containerIDs, err := docker.ListContainers()
+				if err != nil {
+					logger.Error.Printf("Failed to list containers: %v", err)
+					continue
+				}
+				fmt.Println(containerIDs)
+
+			case <-sigChan:
+				// Received an exit signal
+				logger.Info.Println("Shutting down gracefully...")
+				// Perform any necessary cleanup here
+				mqtt.Close()
+				docker.Close()
+				logger.Info.Println("Shutdown complete")
+				done <- true
+				return
+			}
+		}
+	}()
+
+	// Block until shutdown signal is received
+	<-done
 }

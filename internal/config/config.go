@@ -9,6 +9,7 @@ import (
 
 type Configuration struct {
 	MQTTBrokerUrl        string `yaml:"mqtt-broker-url"`
+	PollingInterval      int    `yaml:"polling-interval"`
 }
 
 var cfg *Configuration

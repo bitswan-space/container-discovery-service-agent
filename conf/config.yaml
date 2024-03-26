@@ -1,1 +1,2 @@
-mqtt-broker-url: mqtt://localhost:1883
+mqtt-broker-url: mqtt://127.0.0.1:1883
+polling-interval: 10
