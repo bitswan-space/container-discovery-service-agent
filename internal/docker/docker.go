@@ -13,13 +13,11 @@ import (
 	"github.com/docker/docker/client"
 )
 
-
 type TopologyItem struct {
 	Wires      []string           `json:"wires"`
 	Properties TopologyProperties `json:"properties"`
 	Metrics    []int              `json:"metrics"`
 }
-
 
 type TopologyProperties struct {
 	ContainerID  string    `json:"container-id"`
@@ -32,10 +30,9 @@ type TopologyProperties struct {
 }
 
 type Topology struct {
-	Topology        map[string]TopologyItem `json:"topology"`
-	DisplayStyle    string                  `json:"display-style"`
+	Topology     map[string]TopologyItem `json:"topology"`
+	DisplayStyle string                  `json:"display-style"`
 }
-
 
 var cli *client.Client // Docker client
 var cfg *config.Configuration
@@ -60,7 +57,7 @@ func Close() {
 	}
 }
 
-func SendTopology(){
+func SendTopology() {
 	var topology Topology = Topology{DisplayStyle: "list"}
 	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
@@ -83,7 +80,7 @@ func SendTopology(){
 			TopologyProperties := TopologyProperties{
 				ContainerID:  container.ID,
 				EndpointName: info.Name,
-				CreatedAt:	time.Unix(container.Created, 0),
+				CreatedAt:    time.Unix(container.Created, 0),
 				Name:         strings.Replace(container.Names[0], "/", "", -1),
 				State:        container.State,
 				Status:       container.Status,

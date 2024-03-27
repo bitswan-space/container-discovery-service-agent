@@ -41,10 +41,8 @@ func main() {
 		os.Exit(1)
 	}
 
-
 	ticker := time.NewTicker(time.Duration(cfg.PollingInterval) * time.Second)
 	defer ticker.Stop()
-
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
