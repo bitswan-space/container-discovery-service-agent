@@ -73,10 +73,12 @@ func SendTopology() {
 	for _, container := range containers {
 		// filter pumps
 		if _, exists := container.Labels["space.bitswan.pipeline.protocol-version"]; exists {
-			deploymentId := GetDeploymentId(container.ID)
-			if deploymentId == "" {
+			if _, exists := container.Labels["gitops.deployment_id"]; !exists {
 				continue
 			}
+
+			deploymentId := container.Labels["gitops.deployment_id"]
+
 			TopologyProperties := TopologyProperties{
 				ContainerID:  container.ID,
 				EndpointName: info.Name,
@@ -105,19 +107,4 @@ func SendTopology() {
 
 	mqtt.Publish(cfg.TopologyTopic, string(b))
 
-}
-
-func GetDeploymentId(containerId string) string {
-	inspect, err := cli.ContainerInspect(context.Background(), containerId)
-	if err != nil {
-		return ""
-	}
-
-	for _, envVar := range inspect.Config.Env {
-		parts := strings.SplitN(envVar, "=", 2)
-		if len(parts) == 2 && parts[0] == "DEPLOYMENT_ID" {
-			return parts[1] // Return a pointer to the string
-		}
-	}
-	return "" // DEPLOYMENT_ID not found, return nil
 }
