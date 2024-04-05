@@ -59,7 +59,7 @@ func Close() {
 
 func SendTopology() {
 	var topology Topology = Topology{DisplayStyle: "list"}
-	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{All: true})
 	if err != nil {
 		logger.Error.Printf("Failed to list containers: %v", err)
 	}
